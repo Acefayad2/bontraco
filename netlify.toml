@@ -8,6 +8,12 @@
 [build.environment]
   NODE_VERSION = "22"
 
+# Netlify otherwise injects a hosting-provider comment and two meta tags into
+# <head>. Those extra nodes break React hydration (error #418), forcing the app
+# to re-render client-side instead of hydrating the prerendered HTML.
+[build.processing]
+  skip_processing = true
+
 # Long-cache the content-hashed build output.
 [[headers]]
   for = "/_next/static/*"
