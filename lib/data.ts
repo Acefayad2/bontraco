@@ -427,23 +427,47 @@ export function daysUntil(date: string, from = "2026-09-09") {
   return Math.round(ms / 86_400_000);
 }
 
-export function money(n: number, compact = false) {
-  if (n === 0) return "—";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency", currency: "USD",
-    notation: compact ? "compact" : "standard",
-    maximumFractionDigits: compact ? 1 : 0,
-  }).format(n);
+/* ── Formatters ────────────────────────────────────────────────────
+   Deliberately hand-rolled rather than using Intl. These strings are
+   baked into the prerendered HTML at build time and re-computed in the
+   browser at hydration, so any disagreement between the build machine's
+   ICU data and the visitor's is a hydration mismatch. Intl's compact
+   notation is exactly such a case: Node 22 renders 340_000 as "$340.0K"
+   while Chrome renders "$340K". These produce the same string anywhere.
+   ────────────────────────────────────────────────────────────────── */
+
+function group(n: number) {
+  return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
+function trim1(n: number) {
+  const r = Math.round(n * 10) / 10;
+  return Number.isInteger(r) ? r.toFixed(0) : r.toFixed(1);
+}
+
+export function money(n: number, compact = false) {
+  if (n === 0) return "—";
+  const sign = n < 0 ? "-" : "";
+  const abs = Math.abs(n);
+  if (!compact) return `${sign}$${group(abs)}`;
+  if (abs >= 1_000_000_000) return `${sign}$${trim1(abs / 1_000_000_000)}B`;
+  if (abs >= 1_000_000) return `${sign}$${trim1(abs / 1_000_000)}M`;
+  if (abs >= 1_000) return `${sign}$${trim1(abs / 1_000)}K`;
+  return `${sign}$${group(abs)}`;
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 export function formatDate(d: string) {
-  return new Date(d + "T00:00:00Z").toLocaleDateString("en-US", {
-    year: "numeric", month: "short", day: "numeric", timeZone: "UTC",
-  });
+  const t = new Date(d + "T00:00:00Z");
+  return `${MONTHS[t.getUTCMonth()]} ${t.getUTCDate()}, ${t.getUTCFullYear()}`;
 }
 
 export function formatDateTime(d: string) {
-  return new Date(d).toLocaleString("en-US", {
-    month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "UTC",
-  });
+  const t = new Date(d);
+  const h24 = t.getUTCHours();
+  const h = h24 % 12 === 0 ? 12 : h24 % 12;
+  const m = String(t.getUTCMinutes()).padStart(2, "0");
+  return `${MONTHS[t.getUTCMonth()]} ${t.getUTCDate()}, ${h}:${m} ${h24 < 12 ? "AM" : "PM"}`;
 }
