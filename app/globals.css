@@ -119,6 +119,12 @@ body {
   border-radius: 4px;
 }
 
+/* Theme toggle shows one icon, chosen by CSS rather than by JS, so the
+   rendered markup is identical on server and client. */
+.theme-icon-sun { display: none; }
+:root[data-theme="dark"] .theme-icon-moon { display: none; }
+:root[data-theme="dark"] .theme-icon-sun { display: inline-block; }
+
 /* Numeric alignment for money/date columns */
 .tabular { font-variant-numeric: tabular-nums; }
 
