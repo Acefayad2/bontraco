@@ -75,6 +75,15 @@ Theme is stored in `localStorage` under `bontraco-theme` and applied to
 `<html data-theme>` by an inline script in `app/layout.tsx`, before first paint,
 so there is no flash. The system preference is the default.
 
+## Known platform quirk
+
+Netlify injects two `<meta>` tags into `<head>` ahead of anything Next
+renders. React cannot reconcile them and logs one recoverable hydration
+warning per page load. `ThemeSync` re-asserts `data-theme` after hydration so
+the theme is always correct; nothing else is affected. Matching the tags in
+source would mean hardcoding a host marketing URL and site id, so the warning
+is left in place.
+
 ## Verified
 
 - Production build: 24 routes, all prerendered
