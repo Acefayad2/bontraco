@@ -1,26 +1,176 @@
 @import "tailwindcss";
 
+/* ─────────────────────────────────────────────────────────────
+   BONTRACO DESIGN SYSTEM
+   Style:  Swiss / editorial enterprise. High contrast, grid-led.
+   Voice:  Legal authority without the mahogany. Precise, calm.
+   Avoid:  AI purple/pink gradients, glow blobs, playful shapes.
+   ───────────────────────────────────────────────────────────── */
+
+@theme {
+  /* Type */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: var(--font-instrument), "Instrument Serif", Georgia, serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Ink scale — warm-cooled navy, not pure slate */
+  --color-ink-950: #070b12;
+  --color-ink-900: #0b1220;
+  --color-ink-800: #131c2e;
+  --color-ink-700: #1d2942;
+  --color-ink-600: #2c3a56;
+  --color-ink-500: #475569;
+  --color-ink-400: #6b7a90;
+  --color-ink-300: #9aa7b8;
+  --color-ink-200: #c9d2dd;
+  --color-ink-100: #e3e9f0;
+  --color-ink-50:  #f2f5f9;
+
+  /* Brand — deep emerald "executed / verified" */
+  --color-brand-900: #06331f;
+  --color-brand-800: #084f31;
+  --color-brand-700: #0a6640;
+  --color-brand-600: #0d7f50;
+  --color-brand-500: #12a066;
+  --color-brand-400: #34c489;
+  --color-brand-300: #6fdcae;
+  --color-brand-100: #d3f5e5;
+  --color-brand-50:  #ecfbf4;
+
+  /* Semantics for risk / status */
+  --color-risk-high: #b42318;
+  --color-risk-high-bg: #fef3f2;
+  --color-risk-med: #b54708;
+  --color-risk-med-bg: #fffaeb;
+  --color-risk-low: #067647;
+  --color-risk-low-bg: #ecfdf3;
+  --color-info: #175cd3;
+  --color-info-bg: #eff8ff;
+
+  --radius-card: 0.625rem;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --bg: #f7f9fb;
+  --surface: #ffffff;
+  --surface-2: #f2f5f9;
+  --fg: #0b1220;
+  --fg-muted: #56637a;
+  --fg-subtle: #7d8899;
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
+  --accent: #0a6640;
+  --accent-fg: #ffffff;
+  --ring: #0d7f50;
+  --shadow-sm: 0 1px 2px rgba(11, 18, 32, 0.06);
+  --shadow-md: 0 1px 3px rgba(11, 18, 32, 0.08), 0 8px 24px -12px rgba(11, 18, 32, 0.14);
+  --shadow-lg: 0 2px 6px rgba(11, 18, 32, 0.06), 0 24px 48px -20px rgba(11, 18, 32, 0.22);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #070b12;
+  --surface: #0e1626;
+  --surface-2: #131c2e;
+  --fg: #eef2f7;
+  --fg-muted: #9aa7b8;
+  --fg-subtle: #6b7a90;
+  --line: #1e293b;
+  --line-strong: #2c3a56;
+  --accent: #12a066;
+  --accent-fg: #04170e;
+  --ring: #34c489;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 1px 3px rgba(0, 0, 0, 0.5), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 2px 6px rgba(0, 0, 0, 0.5), 0 24px 48px -20px rgba(0, 0, 0, 0.7);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+* { border-color: var(--line); }
+
+html { -webkit-text-size-adjust: 100%; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Focus — never removed, always visible (WCAG 2.4.7) */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Numeric alignment for money/date columns */
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* Editorial display type */
+.display {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.03;
+}
+
+/* Fine hairline grid used across marketing sections */
+.hairline-grid {
+  background-image:
+    linear-gradient(to right, var(--line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+/* Scrollbars inside dense panels */
+.thin-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+.thin-scroll::-webkit-scrollbar-track { background: transparent; }
+
+@keyframes bt-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes bt-sweep {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+@keyframes bt-pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(18, 160, 102, 0.35); }
+  70%  { box-shadow: 0 0 0 8px rgba(18, 160, 102, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(18, 160, 102, 0); }
+}
+
+.animate-fade-up { animation: bt-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-sweep  { animation: bt-sweep 1.6s ease-in-out infinite; }
+.animate-pulse-ring { animation: bt-pulse-ring 2s ease-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
