@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 /* ── Button ─────────────────────────────────────────────────── */
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary" | "ghost" | "outline" | "danger";
+  variant?: "primary" | "secondary" | "ghost" | "outline" | "danger" | "pop";
   size?: "sm" | "md" | "lg";
 };
 
@@ -16,6 +16,7 @@ const buttonVariants = {
     "border border-[var(--line-strong)] bg-[var(--surface)] text-[var(--fg)] hover:bg-[var(--surface-2)] hover:border-[var(--fg-subtle)]",
   ghost: "text-[var(--fg-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--fg)]",
   danger: "bg-risk-high text-white hover:brightness-110",
+  pop: "bg-[var(--pop)] text-[var(--pop-fg)] hover:brightness-110 shadow-[var(--shadow-sm)]",
 };
 
 const buttonSizes = {
@@ -44,7 +45,7 @@ export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
     <div
       className={cn(
         "rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--surface)]",
-        "shadow-[var(--shadow-sm)]",
+        "shadow-[var(--shadow-md)]",
         className,
       )}
       {...props}
@@ -57,11 +58,11 @@ export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDiv
 }
 
 export function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h3 className={cn("text-[15px] font-semibold tracking-[-0.01em]", className)} {...props} />;
+  return <h3 className={cn("text-[16px] font-semibold tracking-[-0.015em]", className)} {...props} />;
 }
 
 export function CardDescription({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn("text-[13px] text-[var(--fg-muted)] leading-relaxed mt-0.5", className)} {...props} />;
+  return <p className={cn("text-[13.5px] text-[var(--fg-muted)] leading-relaxed mt-1", className)} {...props} />;
 }
 
 export function CardBody({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {

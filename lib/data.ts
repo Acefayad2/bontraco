@@ -379,9 +379,9 @@ export const openFindings = contracts.reduce(
   (n, c) => n + c.clauses.filter((cl) => cl.risk !== "low" && !cl.accepted).length, 0);
 
 export const riskDistribution = [
-  { name: "Low", value: contracts.filter((c) => c.risk === "low").length, fill: "var(--color-risk-low)" },
+  { name: "Low", value: contracts.filter((c) => c.risk === "low").length, fill: "var(--color-brand-400)" },
   { name: "Medium", value: contracts.filter((c) => c.risk === "medium").length, fill: "var(--color-risk-med)" },
-  { name: "High", value: contracts.filter((c) => c.risk === "high").length, fill: "var(--color-risk-high)" },
+  { name: "High", value: contracts.filter((c) => c.risk === "high").length, fill: "var(--color-flag-600)" },
 ];
 
 export const cycleTimeSeries = [

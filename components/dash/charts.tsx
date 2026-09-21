@@ -37,7 +37,7 @@ function TipBox({ active, payload, label, suffix = "" }: {
 /* ── Cycle time: manual vs Bontraco ─────────────────────────── */
 export function CycleTimeChart() {
   return (
-    <ResponsiveContainer width="100%" height={230}>
+    <ResponsiveContainer width="100%" height={280}>
       <AreaChart data={cycleTimeSeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="gBontraco" x1="0" y1="0" x2="0" y2="1">
@@ -60,9 +60,9 @@ export function CycleTimeChart() {
         />
         <Area
           type="monotone" dataKey="bontraco" name="With Bontraco"
-          stroke="var(--color-brand-600)" strokeWidth={2.5}
+          stroke="var(--color-brand-600)" strokeWidth={2.75}
           fill="url(#gBontraco)"
-          dot={{ r: 2.5, fill: "var(--color-brand-600)", strokeWidth: 0 }}
+          dot={{ r: 3, fill: "var(--color-brand-600)", strokeWidth: 0 }}
           activeDot={{ r: 4.5 }}
         />
       </AreaChart>
@@ -73,7 +73,7 @@ export function CycleTimeChart() {
 /* ── Portfolio value by department ──────────────────────────── */
 export function ValueByDeptChart() {
   return (
-    <ResponsiveContainer width="100%" height={230}>
+    <ResponsiveContainer width="100%" height={280}>
       <BarChart data={valueByDept} layout="vertical" margin={{ top: 4, right: 12, left: 4, bottom: 0 }}>
         <CartesianGrid stroke="var(--line)" horizontal={false} />
         <XAxis
@@ -99,7 +99,7 @@ export function ValueByDeptChart() {
         />
         <Bar dataKey="value" name="Contract value" radius={[0, 4, 4, 0]} maxBarSize={18}>
           {valueByDept.map((_, i) => (
-            <Cell key={i} fill={i === 0 ? "var(--color-brand-600)" : "var(--color-brand-600)"} fillOpacity={1 - i * 0.11} />
+            <Cell key={i} fill="var(--color-brand-600)" fillOpacity={1 - i * 0.1} />
           ))}
         </Bar>
       </BarChart>
@@ -112,11 +112,11 @@ export function RiskDonut() {
   const total = riskDistribution.reduce((n, d) => n + d.value, 0);
   return (
     <div className="relative">
-      <ResponsiveContainer width="100%" height={188}>
+      <ResponsiveContainer width="100%" height={210}>
         <PieChart>
           <Pie
             data={riskDistribution} dataKey="value" nameKey="name"
-            innerRadius={58} outerRadius={80} paddingAngle={3} strokeWidth={0}
+            innerRadius={64} outerRadius={92} paddingAngle={3} strokeWidth={0}
           >
             {riskDistribution.map((d, i) => <Cell key={i} fill={d.fill} />)}
           </Pie>
@@ -124,7 +124,7 @@ export function RiskDonut() {
         </PieChart>
       </ResponsiveContainer>
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-        <span className="tabular font-serif text-[30px] leading-none text-[var(--fg)]">{total}</span>
+        <span className="numeral tabular text-[34px] text-[var(--fg)]">{total}</span>
         <span className="mt-1 text-[11px] text-[var(--fg-subtle)]">contracts</span>
       </div>
     </div>
@@ -148,7 +148,7 @@ export function ClauseHeatChart() {
           wrapperStyle={{ fontSize: 11.5, color: "var(--fg-muted)" }}
         />
         <Bar dataKey="total" name="Clauses reviewed" fill="var(--line-strong)" radius={[3, 3, 0, 0]} maxBarSize={26} />
-        <Bar dataKey="flagged" name="Flagged" fill="var(--color-risk-high)" radius={[3, 3, 0, 0]} maxBarSize={26} />
+        <Bar dataKey="flagged" name="Flagged" fill="var(--color-flag-600)" radius={[3, 3, 0, 0]} maxBarSize={26} />
       </BarChart>
     </ResponsiveContainer>
   );

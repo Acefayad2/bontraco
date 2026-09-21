@@ -13,77 +13,94 @@
   --font-serif: var(--font-instrument), "Instrument Serif", Georgia, serif;
   --font-mono: var(--font-jetbrains), ui-monospace, "SF Mono", Menlo, monospace;
 
-  /* Ink scale — warm-cooled navy, not pure slate */
-  --color-ink-950: #070b12;
-  --color-ink-900: #0b1220;
-  --color-ink-800: #131c2e;
-  --color-ink-700: #1d2942;
-  --color-ink-600: #2c3a56;
-  --color-ink-500: #475569;
-  --color-ink-400: #6b7a90;
-  --color-ink-300: #9aa7b8;
-  --color-ink-200: #c9d2dd;
-  --color-ink-100: #e3e9f0;
-  --color-ink-50:  #f2f5f9;
+  /* Ink — midnight blue, used for text and the dark surfaces */
+  --color-ink-950: #04091a;
+  --color-ink-900: #0a1533;
+  --color-ink-800: #102047;
+  --color-ink-700: #17305f;
+  --color-ink-600: #22417a;
+  --color-ink-500: #3a5a8f;
+  --color-ink-400: #6b81ab;
+  --color-ink-300: #9aaccb;
+  --color-ink-200: #c6d2e6;
+  --color-ink-100: #e1e8f5;
+  --color-ink-50:  #f1f5fc;
 
-  /* Brand — deep emerald "executed / verified" */
-  --color-brand-900: #06331f;
-  --color-brand-800: #084f31;
-  --color-brand-700: #0a6640;
-  --color-brand-600: #0d7f50;
-  --color-brand-500: #12a066;
-  --color-brand-400: #34c489;
-  --color-brand-300: #6fdcae;
-  --color-brand-100: #d3f5e5;
-  --color-brand-50:  #ecfbf4;
+  /* Brand — midnight blue */
+  --color-brand-950: #04091a;
+  --color-brand-900: #0a1533;
+  --color-brand-800: #102047;
+  --color-brand-700: #17305f;
+  --color-brand-600: #1e3e7b;
+  --color-brand-500: #2a54a0;
+  --color-brand-400: #4a7ad0;
+  --color-brand-300: #8aaae0;
+  --color-brand-100: #dce6f7;
+  --color-brand-50:  #eff4fd;
+
+  /* Signal red — the accent, and the high-risk semantic */
+  --color-flag-700: #a5112b;
+  --color-flag-600: #c8143a;
+  --color-flag-500: #e01b41;
+  --color-flag-400: #f2536f;
+  --color-flag-100: #fddfe5;
+  --color-flag-50:  #fef2f4;
 
   /* Semantics for risk / status */
-  --color-risk-high: #b42318;
-  --color-risk-high-bg: #fef3f2;
-  --color-risk-med: #b54708;
+  --color-risk-high: #c8143a;
+  --color-risk-high-bg: #fef2f4;
+  --color-risk-med: #c2760a;
   --color-risk-med-bg: #fffaeb;
-  --color-risk-low: #067647;
-  --color-risk-low-bg: #ecfdf3;
-  --color-info: #175cd3;
-  --color-info-bg: #eff8ff;
+  --color-risk-low: #1e3e7b;
+  --color-risk-low-bg: #eff4fd;
+  --color-info: #1e3e7b;
+  --color-info-bg: #eff4fd;
 
-  --radius-card: 0.625rem;
+  --radius-card: 0.75rem;
 }
 
 :root {
   color-scheme: light;
-  --bg: #f7f9fb;
+  --bg: #f7fafe;
   --surface: #ffffff;
-  --surface-2: #f2f5f9;
-  --fg: #0b1220;
-  --fg-muted: #56637a;
-  --fg-subtle: #7d8899;
-  --line: #e2e8f0;
-  --line-strong: #cbd5e1;
-  --accent: #0a6640;
+  --surface-2: #f4f7fd;
+  --fg: #0a1533;
+  --fg-muted: #46587e;
+  --fg-subtle: #70819f;
+  --line: #e4eaf6;
+  --line-strong: #cfd9ec;
+  --accent: #17305f;
   --accent-fg: #ffffff;
-  --ring: #0d7f50;
-  --shadow-sm: 0 1px 2px rgba(11, 18, 32, 0.06);
-  --shadow-md: 0 1px 3px rgba(11, 18, 32, 0.08), 0 8px 24px -12px rgba(11, 18, 32, 0.14);
-  --shadow-lg: 0 2px 6px rgba(11, 18, 32, 0.06), 0 24px 48px -20px rgba(11, 18, 32, 0.22);
+  --pop: #c8143a;
+  --pop-fg: #ffffff;
+  --ring: #2a54a0;
+  --shadow-sm: 0 1px 2px rgba(10, 21, 51, 0.05);
+  --shadow-md: 0 1px 3px rgba(10, 21, 51, 0.07), 0 10px 28px -14px rgba(10, 21, 51, 0.16);
+  --shadow-lg: 0 2px 8px rgba(10, 21, 51, 0.06), 0 28px 56px -24px rgba(10, 21, 51, 0.26);
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #070b12;
-  --surface: #0e1626;
-  --surface-2: #131c2e;
-  --fg: #eef2f7;
-  --fg-muted: #9aa7b8;
-  --fg-subtle: #6b7a90;
-  --line: #1e293b;
-  --line-strong: #2c3a56;
-  --accent: #12a066;
-  --accent-fg: #04170e;
-  --ring: #34c489;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 1px 3px rgba(0, 0, 0, 0.5), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
-  --shadow-lg: 0 2px 6px rgba(0, 0, 0, 0.5), 0 24px 48px -20px rgba(0, 0, 0, 0.7);
+  --color-risk-high: #ff6b85;
+  --color-risk-med: #f2b155;
+  --color-risk-low: #8aaae0;
+  --color-info: #8aaae0;
+  --bg: #04091a;
+  --surface: #0a1533;
+  --surface-2: #102047;
+  --fg: #eef3fc;
+  --fg-muted: #9aaccb;
+  --fg-subtle: #6b81ab;
+  --line: #17305f;
+  --line-strong: #22417a;
+  --accent: #4a7ad0;
+  --accent-fg: #04091a;
+  --pop: #f2536f;
+  --pop-fg: #04091a;
+  --ring: #8aaae0;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 1px 3px rgba(0, 0, 0, 0.55), 0 10px 28px -14px rgba(0, 0, 0, 0.65);
+  --shadow-lg: 0 2px 8px rgba(0, 0, 0, 0.55), 0 28px 56px -24px rgba(0, 0, 0, 0.75);
 }
 
 @theme inline {
@@ -97,6 +114,8 @@
   --color-line-strong: var(--line-strong);
   --color-accent: var(--accent);
   --color-accent-fg: var(--accent-fg);
+  --color-pop: var(--pop);
+  --color-pop-fg: var(--pop-fg);
 }
 
 * { border-color: var(--line); }
@@ -106,6 +125,7 @@ html { -webkit-text-size-adjust: 100%; }
 body {
   background: var(--bg);
   color: var(--fg);
+  font-size: 15px;
   font-family: var(--font-sans);
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   -webkit-font-smoothing: antialiased;
@@ -125,15 +145,37 @@ body {
 :root[data-theme="dark"] .theme-icon-moon { display: none; }
 :root[data-theme="dark"] .theme-icon-sun { display: inline-block; }
 
+/* Checkboxes inherit the brand rather than the browser's default beige. */
+input[type="checkbox"], input[type="radio"] {
+  accent-color: var(--accent);
+}
+
 /* Numeric alignment for money/date columns */
 .tabular { font-variant-numeric: tabular-nums; }
 
-/* Editorial display type */
+/* Headlines: tight, heavy sans. Confident rather than decorative. */
 .display {
+  font-weight: 700;
+  letter-spacing: -0.033em;
+  line-height: 1.02;
+}
+
+/* Serif is reserved for large data numerals, where it reads as considered
+   rather than as decoration. */
+.numeral {
   font-family: var(--font-serif);
   font-weight: 400;
-  letter-spacing: -0.02em;
-  line-height: 1.03;
+  letter-spacing: -0.015em;
+  line-height: 1;
+}
+
+/* The one red gesture: a hand-drawn underline under the phrase that matters. */
+.underscore {
+  background-image: linear-gradient(var(--pop), var(--pop));
+  background-repeat: no-repeat;
+  background-position: 0 92%;
+  background-size: 100% 0.09em;
+  padding-bottom: 0.06em;
 }
 
 /* Fine hairline grid used across marketing sections */

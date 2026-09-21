@@ -121,18 +121,17 @@ export default function Home() {
                 </Reveal>
 
                 <Reveal delay={60}>
-                  <h1 className="display mt-6 text-[clamp(2.6rem,6.2vw,4.35rem)] text-[var(--fg)]">
-                    Know what you are
-                    <br />
-                    signing.{" "}
-                    <span className="italic text-brand-700 dark:text-brand-400">
-                      Before you sign it.
-                    </span>
+                  <h1 className="display mt-7 max-w-[13ch] text-[clamp(2.6rem,5.6vw,4.05rem)] text-[var(--fg)]">
+                    Know what you are signing.{" "}
+                    <span className="whitespace-nowrap">
+                      <span className="underscore">Before</span> you
+                    </span>{" "}
+                    sign it.
                   </h1>
                 </Reveal>
 
                 <Reveal delay={120}>
-                  <p className="mt-6 max-w-[54ch] text-[17px] leading-[1.65] text-[var(--fg-muted)]">
+                  <p className="mt-7 max-w-[52ch] text-[18px] leading-[1.6] text-[var(--fg-muted)]">
                     Bontraco reads every contract that reaches your desk, scores it against
                     the positions your team actually takes, and drafts the redline before
                     a lawyer opens the file. Review cycles drop from weeks to days —
@@ -158,7 +157,7 @@ export default function Home() {
                   <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] text-[var(--fg-subtle)]">
                     {["SOC 2 Type II", "ISO 27001", "GDPR-ready", "Your data trains nothing"].map((t) => (
                       <span key={t} className="inline-flex items-center gap-1.5">
-                        <ShieldCheck className="size-3.5 text-brand-600" />
+                        <ShieldCheck className="size-3.5 text-brand-600 dark:text-brand-400" />
                         {t}
                       </span>
                     ))}
@@ -201,7 +200,7 @@ export default function Home() {
               {stats.map((s, i) => (
                 <Reveal key={s.label} delay={i * 70}>
                   <div className="px-0 py-8 sm:px-7 lg:py-12">
-                    <dt className="display text-[clamp(2.2rem,4vw,3rem)] text-[var(--fg)]">{s.value}</dt>
+                    <dt className="numeral text-[clamp(2.4rem,4.2vw,3.25rem)] text-[var(--fg)]">{s.value}</dt>
                     <dd className="mt-2">
                       <span className="block text-[14px] font-medium text-[var(--fg)]">{s.label}</span>
                       <span className="mt-1 block text-[13px] text-[var(--fg-subtle)]">{s.sub}</span>
@@ -324,7 +323,7 @@ export default function Home() {
                 </blockquote>
                 <figcaption className="mt-8 flex items-center justify-center gap-3 text-[14px]">
                   <span className="inline-flex size-9 items-center justify-center rounded-full
-                    bg-brand-500/20 text-[12px] font-semibold text-brand-300">
+                    bg-flag-500/20 text-[12px] font-semibold text-flag-400">
                     DW
                   </span>
                   <span className="text-left">
@@ -404,13 +403,13 @@ export default function Home() {
                       {p.for}
                     </p>
                     <div className="mt-6 flex items-baseline gap-2">
-                      <span className="display text-[42px] text-[var(--fg)]">{p.price}</span>
+                      <span className="numeral text-[46px] text-[var(--fg)]">{p.price}</span>
                       <span className="text-[13px] text-[var(--fg-subtle)]">{p.cadence}</span>
                     </div>
                     <ul className="mt-7 flex-1 space-y-3">
                       {p.features.map((f) => (
                         <li key={f} className="flex items-start gap-2.5 text-[13.5px] leading-snug">
-                          <Check className="mt-0.5 size-4 shrink-0 text-brand-600" />
+                          <Check className="mt-0.5 size-4 shrink-0 text-brand-600 dark:text-brand-400" />
                           <span className="text-[var(--fg-muted)]">{f}</span>
                         </li>
                       ))}
@@ -440,7 +439,7 @@ export default function Home() {
                   className="hairline-grid pointer-events-none absolute inset-0 opacity-[0.06]"
                 />
                 <div className="relative">
-                  <Layers className="mx-auto size-7 text-brand-400" />
+                  <Layers className="mx-auto size-7 text-flag-400" />
                   <h2 className="display mx-auto mt-6 max-w-[22ch] text-[clamp(2rem,4.4vw,3.2rem)] text-white">
                     See Bontraco read one of your contracts.
                   </h2>
