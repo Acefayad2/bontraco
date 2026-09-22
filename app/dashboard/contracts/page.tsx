@@ -1,12 +1,20 @@
-import { Upload, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { PageHeader } from "@/components/dash/page-header";
 import { ContractsTable } from "@/components/dash/contracts-table";
 import { Button } from "@/components/ui/primitives";
-import { contracts, portfolioValue, money } from "@/lib/data";
+import { money } from "@/lib/data";
+import { requireSession } from "@/lib/server/auth";
+import { listContracts } from "@/lib/server/repo";
+import { UploadContract } from "@/components/dash/upload-contract";
 
 export const metadata = { title: "Contracts" };
+export const dynamic = "force-dynamic";
 
-export default function ContractsPage() {
+export default async function ContractsPage() {
+  const session = await requireSession();
+  const contracts = listContracts(session.orgId);
+  const portfolioValue = contracts.reduce((n, c) => n + c.value, 0);
+
   return (
     <>
       <PageHeader
@@ -15,7 +23,7 @@ export default function ContractsPage() {
         actions={
           <>
             <Button variant="outline" size="sm"><Download className="size-3.5" />Export</Button>
-            <Button size="sm"><Upload className="size-3.5" />Upload contract</Button>
+            <UploadContract />
           </>
         }
       />

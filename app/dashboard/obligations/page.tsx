@@ -2,9 +2,12 @@ import Link from "next/link";
 import { CircleAlert, CircleCheck, Clock, Plus, Repeat } from "lucide-react";
 import { PageHeader } from "@/components/dash/page-header";
 import { Card, CardHeader, CardTitle, CardDescription, Button, Badge, Avatar } from "@/components/ui/primitives";
-import { obligations, formatDate, daysUntil } from "@/lib/data";
+import { formatDate, daysUntil } from "@/lib/data";
+import { requireSession } from "@/lib/server/auth";
+import { dashboardData } from "@/lib/server/views";
 
 export const metadata = { title: "Obligations" };
+export const dynamic = "force-dynamic";
 
 const groups = [
   { key: "overdue", label: "Overdue", tone: "high" as const, note: "Past the committed date" },
@@ -16,7 +19,10 @@ const recurrenceLabel = {
   one_time: "One-time", monthly: "Monthly", quarterly: "Quarterly", annual: "Annual",
 };
 
-export default function ObligationsPage() {
+export default async function ObligationsPage() {
+  const session = await requireSession();
+  const { obligations } = dashboardData(session.orgId);
+
   const overdue = obligations.filter((o) => o.status === "overdue").length;
 
   return (

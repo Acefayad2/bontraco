@@ -11,3 +11,8 @@ next-env.d.ts
 .claude/launch.json
 
 out
+
+# local database, uploaded documents
+storage/
+.env.local
+.netlify/

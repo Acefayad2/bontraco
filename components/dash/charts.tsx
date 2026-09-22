@@ -3,7 +3,11 @@ import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis, Legend,
 } from "recharts";
-import { cycleTimeSeries, valueByDept, riskDistribution, clauseHeat } from "@/lib/data";
+import { cycleTimeSeries } from "@/lib/data";
+
+type Slice = { name: string; value: number; fill: string };
+type DeptRow = { dept: string; value: number };
+type HeatRow = { category: string; flagged: number; total: number };
 
 const axis = {
   stroke: "var(--line-strong)",
@@ -71,7 +75,7 @@ export function CycleTimeChart() {
 }
 
 /* ── Portfolio value by department ──────────────────────────── */
-export function ValueByDeptChart() {
+export function ValueByDeptChart({ valueByDept }: { valueByDept: DeptRow[] }) {
   return (
     <ResponsiveContainer width="100%" height={280}>
       <BarChart data={valueByDept} layout="vertical" margin={{ top: 4, right: 12, left: 4, bottom: 0 }}>
@@ -108,7 +112,7 @@ export function ValueByDeptChart() {
 }
 
 /* ── Risk mix ───────────────────────────────────────────────── */
-export function RiskDonut() {
+export function RiskDonut({ riskDistribution }: { riskDistribution: Slice[] }) {
   const total = riskDistribution.reduce((n, d) => n + d.value, 0);
   return (
     <div className="relative">
@@ -132,7 +136,7 @@ export function RiskDonut() {
 }
 
 /* ── Where the flags land ───────────────────────────────────── */
-export function ClauseHeatChart() {
+export function ClauseHeatChart({ clauseHeat }: { clauseHeat: HeatRow[] }) {
   return (
     <ResponsiveContainer width="100%" height={250}>
       <BarChart data={clauseHeat} margin={{ top: 8, right: 8, left: 0, bottom: 40 }}>

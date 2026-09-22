@@ -3,11 +3,17 @@ import { AlertTriangle, ShieldAlert, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/dash/page-header";
 import { ClauseHeatChart } from "@/components/dash/charts";
 import { Card, CardHeader, CardTitle, CardDescription, CardBody, Badge, Button, Meter } from "@/components/ui/primitives";
-import { contracts, money } from "@/lib/data";
+import { money } from "@/lib/data";
+import { requireSession } from "@/lib/server/auth";
+import { dashboardData } from "@/lib/server/views";
 
 export const metadata = { title: "Risk register" };
+export const dynamic = "force-dynamic";
 
-export default function RiskPage() {
+export default async function RiskPage() {
+  const session = await requireSession();
+  const { clauseHeat, contracts } = dashboardData(session.orgId);
+
   /* Flatten every non-low finding across the portfolio, worst first. */
   const findings = contracts
     .flatMap((c) => c.clauses
@@ -56,7 +62,7 @@ export default function RiskPage() {
                 </CardDescription>
               </div>
             </CardHeader>
-            <CardBody className="pt-5"><ClauseHeatChart /></CardBody>
+            <CardBody className="pt-5"><ClauseHeatChart clauseHeat={clauseHeat} /></CardBody>
           </Card>
         </div>
 

@@ -3,9 +3,12 @@ import { CycleTimeChart, ValueByDeptChart, RiskDonut, ClauseHeatChart } from "@/
 import { StatTile } from "@/components/dash/stat-tile";
 import { Card, CardHeader, CardTitle, CardDescription, CardBody, Badge, Button } from "@/components/ui/primitives";
 import { Clock, FileCheck2, Percent, Users, Download } from "lucide-react";
-import { contracts, money, portfolioValue } from "@/lib/data";
+import { money } from "@/lib/data";
+import { requireSession } from "@/lib/server/auth";
+import { dashboardData } from "@/lib/server/views";
 
 export const metadata = { title: "Analytics" };
+export const dynamic = "force-dynamic";
 
 const negotiationOutcomes = [
   { position: "Liability cap reduced to 1×", won: 11, total: 14 },
@@ -23,7 +26,10 @@ const owners = [
   { name: "Sofia Alvarez", dept: "Sales & Marketing", n: 3, value: 4_260_000, median: 6.8 },
 ];
 
-export default function AnalyticsPage() {
+export default async function AnalyticsPage() {
+  const session = await requireSession();
+  const { clauseHeat, contracts, portfolioValue, riskDistribution, valueByDept } = dashboardData(session.orgId);
+
   return (
     <>
       <PageHeader
@@ -62,7 +68,7 @@ export default function AnalyticsPage() {
                 <CardDescription>Current portfolio</CardDescription>
               </div>
             </CardHeader>
-            <CardBody className="pt-3"><RiskDonut /></CardBody>
+            <CardBody className="pt-3"><RiskDonut riskDistribution={riskDistribution} /></CardBody>
           </Card>
         </div>
 
@@ -74,7 +80,7 @@ export default function AnalyticsPage() {
                 <CardDescription>Flagged against total reviewed</CardDescription>
               </div>
             </CardHeader>
-            <CardBody className="pt-5"><ClauseHeatChart /></CardBody>
+            <CardBody className="pt-5"><ClauseHeatChart clauseHeat={clauseHeat} /></CardBody>
           </Card>
 
           <Card>
@@ -84,7 +90,7 @@ export default function AnalyticsPage() {
                 <CardDescription>Total contract value under management</CardDescription>
               </div>
             </CardHeader>
-            <CardBody className="pt-5"><ValueByDeptChart /></CardBody>
+            <CardBody className="pt-5"><ValueByDeptChart valueByDept={valueByDept} /></CardBody>
           </Card>
         </div>
 

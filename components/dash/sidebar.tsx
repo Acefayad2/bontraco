@@ -9,24 +9,29 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
-import { openFindings } from "@/lib/data";
+import type { ShellUser } from "./shell";
 
-const nav = [
-  { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
-  { href: "/dashboard/contracts", label: "Contracts", icon: FileText },
-  { href: "/dashboard/obligations", label: "Obligations", icon: ListChecks, badge: "2" },
-  { href: "/dashboard/renewals", label: "Renewals", icon: CalendarClock },
-  { href: "/dashboard/risk", label: "Risk register", icon: ShieldAlert, badge: String(openFindings) },
-  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
-];
+function navItems(user: ShellUser) {
+  return [
+    { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
+    { href: "/dashboard/contracts", label: "Contracts", icon: FileText },
+    { href: "/dashboard/obligations", label: "Obligations", icon: ListChecks,
+      badge: user.overdueObligations > 0 ? String(user.overdueObligations) : undefined },
+    { href: "/dashboard/renewals", label: "Renewals", icon: CalendarClock },
+    { href: "/dashboard/risk", label: "Risk register", icon: ShieldAlert,
+      badge: user.openFindings > 0 ? String(user.openFindings) : undefined },
+    { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+  ];
+}
 
 const secondary = [
   { href: "/dashboard/assistant", label: "Ask Bontraco", icon: Sparkles },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
-export function Sidebar() {
+export function Sidebar({ user }: { user: ShellUser }) {
   const pathname = usePathname();
+  const nav = navItems(user);
   const [collapsed, setCollapsed] = useState(false);
 
   const isActive = (href: string, exact?: boolean) =>
@@ -127,11 +132,11 @@ export function Sidebar() {
             </span>
             <span className="rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-semibold
               text-brand-700 dark:bg-brand-500/20 dark:text-brand-300">
-              v4
+              v{user.playbookVersion}
             </span>
           </div>
           <p className="mt-1.5 text-[12px] leading-snug text-[var(--fg-muted)]">
-            Vendor Playbook · 34 positions · last trained 6 days ago
+            {user.playbookName} · 11 positions · scored on every upload
           </p>
         </div>
       )}

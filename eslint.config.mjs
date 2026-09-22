@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Build artefacts left by the Netlify CLI, and the local data directory.
+    ".netlify/**",
+    "storage/**",
   ]),
 ]);
 

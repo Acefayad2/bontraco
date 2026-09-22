@@ -8,14 +8,20 @@ import { StatTile } from "@/components/dash/stat-tile";
 import { CycleTimeChart, RiskDonut, ValueByDeptChart } from "@/components/dash/charts";
 import { Card, CardHeader, CardTitle, CardDescription, CardBody, Button, Badge, Meter, Avatar } from "@/components/ui/primitives";
 import { StatusBadge, RiskBadge } from "@/components/ui/status";
-import {
-  contracts, obligations, portfolioValue, activeCount, inReviewCount,
-  highRiskCount, openFindings, money, formatDate, daysUntil, renewalRunway,
-} from "@/lib/data";
+import { money, formatDate, daysUntil } from "@/lib/data";
+import { requireSession } from "@/lib/server/auth";
+import { dashboardData } from "@/lib/server/views";
 
 export const metadata = { title: "Overview" };
+export const dynamic = "force-dynamic";
 
-export default function DashboardHome() {
+export default async function DashboardHome() {
+  const session = await requireSession();
+  const {
+    contracts, obligations, portfolioValue, activeCount, inReviewCount,
+    highRiskCount, openFindings, renewalRunway, riskDistribution, valueByDept,
+  } = dashboardData(session.orgId);
+
   const attention = contracts
     .filter((c) => c.risk === "high" || c.status === "expiring" || c.status === "expired")
     .slice(0, 4);
@@ -99,7 +105,7 @@ export default function DashboardHome() {
               </div>
             </CardHeader>
             <CardBody className="pt-3">
-              <RiskDonut />
+              <RiskDonut riskDistribution={riskDistribution} />
               <ul className="mt-3 space-y-2.5">
                 {[
                   { k: "high", label: "High", n: contracts.filter((c) => c.risk === "high").length, note: "Escalate to counsel" },
@@ -294,7 +300,7 @@ export default function DashboardHome() {
               </Badge>
             </CardHeader>
             <CardBody className="pt-5">
-              <ValueByDeptChart />
+              <ValueByDeptChart valueByDept={valueByDept} />
             </CardBody>
           </Card>
         </div>

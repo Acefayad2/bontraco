@@ -80,4 +80,9 @@ export interface Contract {
   timeline: TimelineEvent[];
   summary: string;
   tags: string[];
+  /** Where the row came from: seeded demo data, or a real uploaded document. */
+  source?: "seed" | "upload";
+  /** Model id that produced the clause findings, or "heuristic" for the
+   *  offline analyzer. Shown in the UI so a reader knows what judged it. */
+  analyzedBy?: string;
 }

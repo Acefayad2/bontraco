@@ -1,11 +1,12 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Search, Bell, Upload, ChevronRight, Menu } from "lucide-react";
+import { Search, Bell, ChevronRight, Menu, LogOut } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { Button, Avatar } from "@/components/ui/primitives";
-import { contracts } from "@/lib/data";
+import { Avatar } from "@/components/ui/primitives";
+import type { Contract } from "@/lib/types";
+import type { ShellUser } from "./shell";
 
 const labels: Record<string, string> = {
   dashboard: "Overview",
@@ -18,7 +19,10 @@ const labels: Record<string, string> = {
   settings: "Settings",
 };
 
-export function Topbar({ onOpenMobileNav }: { onOpenMobileNav?: () => void }) {
+export function Topbar({
+  user, contracts, onOpenMobileNav,
+}: { user: ShellUser; contracts: Contract[]; onOpenMobileNav?: () => void }) {
+  const router = useRouter();
   const pathname = usePathname();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
@@ -136,7 +140,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav?: () => void }) {
       <div className="flex items-center gap-1">
         <ThemeToggle />
         <button
-          aria-label="Notifications — 3 unread"
+          aria-label={`Notifications — ${user.openFindings} open findings`}
           className="relative inline-flex size-9 cursor-pointer items-center justify-center rounded-md
             text-[var(--fg-muted)] transition-colors duration-200
             hover:bg-[var(--surface-2)] hover:text-[var(--fg)]"
@@ -144,13 +148,27 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav?: () => void }) {
           <Bell className="size-[18px]" />
           <span className="absolute right-2 top-2 size-2 rounded-full bg-risk-high ring-2 ring-[var(--surface)]" />
         </button>
-        <Button size="sm" className="ml-1 hidden sm:inline-flex">
-          <Upload className="size-3.5" />
-          Upload
-        </Button>
-        <span className="ml-2 hidden items-center gap-2 sm:flex">
-          <Avatar initials="PR" />
+        <span className="ml-2 hidden items-center gap-2.5 sm:flex">
+          <span className="text-right leading-tight">
+            <span className="block text-[12.5px] font-medium text-[var(--fg)]">{user.name}</span>
+            <span className="block text-[11px] text-[var(--fg-subtle)]">{user.email}</span>
+          </span>
+          <Avatar initials={user.initials} />
         </span>
+        <button
+          onClick={async () => {
+            await fetch("/api/auth/logout", { method: "POST" });
+            router.push("/login");
+            router.refresh();
+          }}
+          aria-label="Sign out"
+          title="Sign out"
+          className="inline-flex size-9 cursor-pointer items-center justify-center rounded-md
+            text-[var(--fg-muted)] transition-colors duration-200
+            hover:bg-[var(--surface-2)] hover:text-[var(--fg)]"
+        >
+          <LogOut className="size-[18px]" />
+        </button>
       </div>
     </header>
   );

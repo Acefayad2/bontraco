@@ -1,11 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* Every route is prerendered and there is no server code, so the app ships
-     as pure static files. Nothing to run at the edge, nothing to cold-start. */
-  output: "export",
-  images: { unoptimized: true },
-  trailingSlash: true,
+  /* The app is no longer a static export: it authenticates users, stores
+     uploaded documents and runs analysis jobs, all of which need a server.
+     See docs/TECHNICAL-PLAN.md for what deploying this now requires. */
+  serverExternalPackages: ["better-sqlite3", "pdfjs-dist"],
 };
 
 export default nextConfig;

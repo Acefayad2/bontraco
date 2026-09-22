@@ -3,9 +3,12 @@ import { CalendarClock, RefreshCw, TrendingUp, AlertTriangle } from "lucide-reac
 import { PageHeader } from "@/components/dash/page-header";
 import { Card, CardHeader, CardTitle, CardDescription, CardBody, Button, Badge, Avatar, Meter } from "@/components/ui/primitives";
 import { StatusBadge } from "@/components/ui/status";
-import { renewalRunway, money, formatDate, daysUntil, contracts } from "@/lib/data";
+import { money, formatDate, daysUntil } from "@/lib/data";
+import { requireSession } from "@/lib/server/auth";
+import { dashboardData } from "@/lib/server/views";
 
 export const metadata = { title: "Renewals" };
+export const dynamic = "force-dynamic";
 
 const quarters = [
   { label: "Q4 2026", from: "2026-10-01", to: "2026-12-31" },
@@ -14,7 +17,10 @@ const quarters = [
   { label: "Later", from: "2027-07-01", to: "2099-12-31" },
 ];
 
-export default function RenewalsPage() {
+export default async function RenewalsPage() {
+  const session = await requireSession();
+  const { contracts, renewalRunway } = dashboardData(session.orgId);
+
   const next90 = renewalRunway.filter((c) => daysUntil(c.expiryDate) <= 90);
   const atRiskValue = next90.reduce((n, c) => n + c.value, 0);
   const autoRenewing = contracts.filter((c) => c.autoRenew && daysUntil(c.expiryDate) > 0);

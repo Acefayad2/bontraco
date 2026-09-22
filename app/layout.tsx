@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Inter, Instrument_Serif, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeSync } from "@/components/ui/theme-sync";
@@ -36,10 +37,12 @@ const bootScript = `(function(){try{var t=localStorage.getItem('bontraco-theme')
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: bootScript }} />
-      </head>
       <body className={`${inter.variable} ${serif.variable} ${mono.variable}`}>
+        <Script
+          id="bontraco-theme-boot"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: bootScript }}
+        />
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-100

@@ -10,6 +10,7 @@ import {
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
 import { Logo } from "@/components/ui/logo";
+import type { Contract } from "@/lib/types";
 
 const mobileNav = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
@@ -22,13 +23,21 @@ const mobileNav = [
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
-export function Shell({ children }: { children: React.ReactNode }) {
+export interface ShellUser {
+  name: string; initials: string; email: string;
+  openFindings: number; overdueObligations: number;
+  playbookName: string; playbookVersion: number;
+}
+
+export function Shell({
+  children, user, contracts,
+}: { children: React.ReactNode; user: ShellUser; contracts: Contract[] }) {
   const [navOpen, setNavOpen] = useState(false);
   const pathname = usePathname();
 
   return (
     <div className="flex min-h-dvh bg-[var(--bg)]">
-      <Sidebar />
+      <Sidebar user={user} />
 
       {navOpen && (
         <div className="fixed inset-0 z-60 lg:hidden">
@@ -77,7 +86,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar onOpenMobileNav={() => setNavOpen(true)} />
+        <Topbar user={user} contracts={contracts} onOpenMobileNav={() => setNavOpen(true)} />
         <main id="main" className="flex-1">{children}</main>
       </div>
     </div>

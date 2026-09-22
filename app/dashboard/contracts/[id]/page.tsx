@@ -7,16 +7,17 @@ import {
 import { ClauseAnalysis } from "@/components/dash/clause-analysis";
 import { Card, CardHeader, CardTitle, CardBody, Button, Badge, Meter, Avatar } from "@/components/ui/primitives";
 import { StatusBadge, RiskBadge } from "@/components/ui/status";
-import { getContract, contracts, money, formatDate, formatDateTime, daysUntil } from "@/lib/data";
+import { money, formatDate, formatDateTime, daysUntil } from "@/lib/data";
+import { requireSession } from "@/lib/server/auth";
+import { getContract } from "@/lib/server/repo";
 import type { TimelineEvent } from "@/lib/types";
 
-export function generateStaticParams() {
-  return contracts.map((c) => ({ id: c.id }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const c = getContract(id);
+  const session = await requireSession();
+  const c = getContract(session.orgId, id);
   return { title: c ? `${c.ref} — ${c.title}` : "Contract" };
 }
 
@@ -32,7 +33,8 @@ const kindIcon: Record<TimelineEvent["kind"], React.ComponentType<{ className?: 
 
 export default async function ContractDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const c = getContract(id);
+  const session = await requireSession();
+  const c = getContract(session.orgId, id);
   if (!c) notFound();
 
   const flagged = c.clauses.filter((cl) => cl.risk !== "low");
