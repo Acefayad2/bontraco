@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { db } from "@/lib/server/db";
+import { one } from "@/lib/server/db";
 import { verifyPassword, createSession, audit } from "@/lib/server/auth";
 import { seed, isSeeded } from "@/lib/server/seed";
 
@@ -20,12 +20,12 @@ export async function POST(request: Request) {
   const { email, password } = parsed.data;
 
   // First run: create the demo org so there is an account to sign in to.
-  if (!isSeeded()) seed();
+  if (!(await isSeeded())) await seed();
 
-  const user = db().prepare(
+  const user = await one<{ id: string; org_id: string; password_hash: string }>(
     `SELECT id, org_id, password_hash FROM users WHERE email = ?`,
-  ).get(email.toLowerCase().trim()) as
-    { id: string; org_id: string; password_hash: string } | undefined;
+    [email.toLowerCase().trim()],
+  );
 
   // Same response and roughly the same work either way, so the endpoint does
   // not reveal which addresses have accounts.
@@ -35,6 +35,6 @@ export async function POST(request: Request) {
   }
 
   await createSession(user.id, user.org_id);
-  audit(user.org_id, user.id, "auth.login", "user", user.id);
+  await audit(user.org_id, user.id, "auth.login", "user", user.id);
   return NextResponse.json({ ok: true });
 }

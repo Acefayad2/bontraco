@@ -16,9 +16,9 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
   if (!parsed.success) return NextResponse.json({ error: "Expected { accepted: boolean }." }, { status: 400 });
 
   const { id } = await ctx.params;
-  const changed = setClauseAccepted(session.orgId, id, parsed.data.accepted);
+  const changed = await setClauseAccepted(session.orgId, id, parsed.data.accepted);
   if (changed === 0) return NextResponse.json({ error: "No such finding." }, { status: 404 });
 
-  audit(session.orgId, session.userId, "clause.resolution", "clause", id, parsed.data);
+  await audit(session.orgId, session.userId, "clause.resolution", "clause", id, parsed.data);
   return NextResponse.json({ ok: true });
 }

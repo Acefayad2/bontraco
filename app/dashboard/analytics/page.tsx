@@ -28,7 +28,7 @@ const owners = [
 
 export default async function AnalyticsPage() {
   const session = await requireSession();
-  const { clauseHeat, contracts, portfolioValue, riskDistribution, valueByDept } = dashboardData(session.orgId);
+  const { clauseHeat, contracts, portfolioValue, riskDistribution, valueByDept } = await dashboardData(session.orgId);
 
   return (
     <>

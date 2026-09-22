@@ -21,7 +21,7 @@ const recurrenceLabel = {
 
 export default async function ObligationsPage() {
   const session = await requireSession();
-  const { obligations } = dashboardData(session.orgId);
+  const { obligations } = await dashboardData(session.orgId);
 
   const overdue = obligations.filter((o) => o.status === "overdue").length;
 

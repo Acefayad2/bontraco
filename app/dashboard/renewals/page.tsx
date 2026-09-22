@@ -19,7 +19,7 @@ const quarters = [
 
 export default async function RenewalsPage() {
   const session = await requireSession();
-  const { contracts, renewalRunway } = dashboardData(session.orgId);
+  const { contracts, renewalRunway } = await dashboardData(session.orgId);
 
   const next90 = renewalRunway.filter((c) => daysUntil(c.expiryDate) <= 90);
   const atRiskValue = next90.reduce((n, c) => n + c.value, 0);

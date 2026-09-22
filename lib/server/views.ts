@@ -22,10 +22,12 @@ export interface DashboardData {
   renewalRunway: Contract[];
 }
 
-export function dashboardData(orgId: string, today = "2026-09-09"): DashboardData {
-  const contracts = listContracts(orgId);
-  const obligations = listObligations(orgId);
-  const stats = orgStats(orgId);
+export async function dashboardData(
+  orgId: string, today = "2026-09-09",
+): Promise<DashboardData> {
+  const [contracts, obligations, stats] = await Promise.all([
+    listContracts(orgId), listObligations(orgId), orgStats(orgId),
+  ]);
 
   const byDept = new Map<string, number>();
   for (const c of contracts) {

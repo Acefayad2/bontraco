@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await requireSession();
-  const c = getContract(session.orgId, id);
+  const c = await getContract(session.orgId, id);
   return { title: c ? `${c.ref} — ${c.title}` : "Contract" };
 }
 
@@ -34,7 +34,7 @@ const kindIcon: Record<TimelineEvent["kind"], React.ComponentType<{ className?: 
 export default async function ContractDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await requireSession();
-  const c = getContract(session.orgId, id);
+  const c = await getContract(session.orgId, id);
   if (!c) notFound();
 
   const flagged = c.clauses.filter((cl) => cl.risk !== "low");

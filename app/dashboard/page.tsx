@@ -20,7 +20,7 @@ export default async function DashboardHome() {
   const {
     contracts, obligations, portfolioValue, activeCount, inReviewCount,
     highRiskCount, openFindings, renewalRunway, riskDistribution, valueByDept,
-  } = dashboardData(session.orgId);
+  } = await dashboardData(session.orgId);
 
   const attention = contracts
     .filter((c) => c.risk === "high" || c.status === "expiring" || c.status === "expired")

@@ -10,7 +10,7 @@ export async function GET(_request: Request, ctx: { params: Promise<{ id: string
   if (!session) return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
 
   const { id } = await ctx.params;
-  const job = getJob(session.orgId, id);
+  const job = await getJob(session.orgId, id);
   if (!job) return NextResponse.json({ error: "No such job." }, { status: 404 });
   return NextResponse.json(job);
 }

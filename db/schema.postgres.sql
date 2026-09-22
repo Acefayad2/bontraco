@@ -5,18 +5,16 @@
 -- into every statement, so a missing tenant filter is a compile error rather
 -- than a silent cross-tenant read.
 --
--- SQLite here for local development. The column types and constraints are
--- chosen to port to Postgres without rewriting queries (TEXT ids, ISO-8601
--- timestamps, integer booleans read through helpers).
+-- Postgres (Supabase). Ids are TEXT so they stay readable in logs and URLs;
+-- timestamps are TIMESTAMPTZ; the integer booleans SQLite needed are now
+-- real BOOLEANs.
 
-PRAGMA journal_mode = WAL;
-PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS orgs (
   id          TEXT PRIMARY KEY,
   name        TEXT NOT NULL,
   slug        TEXT NOT NULL UNIQUE,
-  created_at  TEXT NOT NULL
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -27,7 +25,7 @@ CREATE TABLE IF NOT EXISTS users (
   initials      TEXT NOT NULL,
   password_hash TEXT NOT NULL,
   role          TEXT NOT NULL DEFAULT 'member',   -- owner | admin | member
-  created_at    TEXT NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (email)
 );
 CREATE INDEX IF NOT EXISTS idx_users_org ON users(org_id);
@@ -36,8 +34,8 @@ CREATE TABLE IF NOT EXISTS sessions (
   id          TEXT PRIMARY KEY,           -- random; the cookie carries a signed form of this
   user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   org_id      TEXT NOT NULL REFERENCES orgs(id) ON DELETE CASCADE,
-  expires_at  TEXT NOT NULL,
-  created_at  TEXT NOT NULL
+  expires_at  TIMESTAMPTZ NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 
@@ -47,8 +45,8 @@ CREATE TABLE IF NOT EXISTS playbooks (
   org_id      TEXT NOT NULL REFERENCES orgs(id) ON DELETE CASCADE,
   name        TEXT NOT NULL,
   version     INTEGER NOT NULL DEFAULT 1,
-  is_default  INTEGER NOT NULL DEFAULT 0,
-  created_at  TEXT NOT NULL
+  is_default  BOOLEAN NOT NULL DEFAULT false,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_playbooks_org ON playbooks(org_id);
 
@@ -78,10 +76,10 @@ CREATE TABLE IF NOT EXISTS contracts (
   currency        TEXT NOT NULL DEFAULT 'USD',
   owner_user_id   TEXT REFERENCES users(id) ON DELETE SET NULL,
   department      TEXT NOT NULL DEFAULT '',
-  effective_date  TEXT,
-  expiry_date     TEXT,
+  effective_date  DATE,
+  expiry_date     DATE,
   renewal_notice  INTEGER NOT NULL DEFAULT 0,
-  auto_renew      INTEGER NOT NULL DEFAULT 0,
+  auto_renew      BOOLEAN NOT NULL DEFAULT false,
   governing_law   TEXT NOT NULL DEFAULT '',
   risk            TEXT NOT NULL DEFAULT 'low',
   risk_score      INTEGER NOT NULL DEFAULT 0,
@@ -91,7 +89,7 @@ CREATE TABLE IF NOT EXISTS contracts (
   tags            TEXT NOT NULL DEFAULT '[]',     -- JSON array
   source          TEXT NOT NULL DEFAULT 'seed',   -- seed | upload
   analyzed_by     TEXT,                           -- model id, or 'heuristic'
-  created_at      TEXT NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (org_id, ref)
 );
 CREATE INDEX IF NOT EXISTS idx_contracts_org ON contracts(org_id);
@@ -110,7 +108,7 @@ CREATE TABLE IF NOT EXISTS clauses (
   suggestion    TEXT NOT NULL DEFAULT '',
   page          INTEGER NOT NULL DEFAULT 1,
   position_id   TEXT REFERENCES playbook_positions(id) ON DELETE SET NULL,
-  accepted      INTEGER NOT NULL DEFAULT 0,
+  accepted      BOOLEAN NOT NULL DEFAULT false,
   sort_order    INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_clauses_contract ON clauses(contract_id);
@@ -125,7 +123,7 @@ CREATE TABLE IF NOT EXISTS documents (
   sha256        TEXT NOT NULL,
   storage_key   TEXT NOT NULL,
   page_count    INTEGER NOT NULL DEFAULT 0,
-  created_at    TEXT NOT NULL
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_documents_org ON documents(org_id);
 
@@ -149,9 +147,9 @@ CREATE TABLE IF NOT EXISTS jobs (
   document_id   TEXT REFERENCES documents(id) ON DELETE CASCADE,
   contract_id   TEXT REFERENCES contracts(id) ON DELETE CASCADE,
   error         TEXT,
-  created_at    TEXT NOT NULL,
-  started_at    TEXT,
-  finished_at   TEXT
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  started_at  TIMESTAMPTZ,
+  finished_at  TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS idx_jobs_org ON jobs(org_id);
 
@@ -161,7 +159,7 @@ CREATE TABLE IF NOT EXISTS obligations (
   contract_id     TEXT NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,
   description     TEXT NOT NULL,
   owner_user_id   TEXT REFERENCES users(id) ON DELETE SET NULL,
-  due_date        TEXT NOT NULL,
+  due_date        DATE NOT NULL,
   recurrence      TEXT NOT NULL DEFAULT 'one_time',
   status          TEXT NOT NULL DEFAULT 'upcoming',
   category        TEXT NOT NULL DEFAULT 'Other'
@@ -178,6 +176,6 @@ CREATE TABLE IF NOT EXISTS audit_log (
   subject_type  TEXT NOT NULL DEFAULT '',
   subject_id    TEXT NOT NULL DEFAULT '',
   meta          TEXT NOT NULL DEFAULT '{}',
-  created_at    TEXT NOT NULL
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_audit_org ON audit_log(org_id, created_at);

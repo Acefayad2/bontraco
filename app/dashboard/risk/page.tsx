@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export default async function RiskPage() {
   const session = await requireSession();
-  const { clauseHeat, contracts } = dashboardData(session.orgId);
+  const { clauseHeat, contracts } = await dashboardData(session.orgId);
 
   /* Flatten every non-low finding across the portfolio, worst first. */
   const findings = contracts

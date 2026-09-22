@@ -1,7 +1,7 @@
 import "server-only";
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
-import { db, id, now } from "./db";
+import { one, run, id, now } from "./db";
 
 /* Session auth: scrypt-hashed passwords, opaque session ids in an httpOnly
    cookie, sessions stored server-side so they can be revoked.
@@ -49,10 +49,11 @@ export interface SessionContext {
 export async function createSession(userId: string, orgId: string) {
   const sid = id("sess");
   const expires = new Date(Date.now() + SESSION_DAYS * 86_400_000);
-  db().prepare(
+  await run(
     `INSERT INTO sessions (id, user_id, org_id, expires_at, created_at)
      VALUES (?, ?, ?, ?, ?)`,
-  ).run(sid, userId, orgId, expires.toISOString(), now());
+    [sid, userId, orgId, expires.toISOString(), now()],
+  );
 
   const jar = await cookies();
   jar.set(COOKIE, sid, {
@@ -68,7 +69,7 @@ export async function createSession(userId: string, orgId: string) {
 export async function destroySession() {
   const jar = await cookies();
   const sid = jar.get(COOKIE)?.value;
-  if (sid) db().prepare(`DELETE FROM sessions WHERE id = ?`).run(sid);
+  if (sid) await run(`DELETE FROM sessions WHERE id = ?`, [sid]);
   jar.delete(COOKIE);
 }
 
@@ -78,20 +79,21 @@ export async function getSession(): Promise<SessionContext | null> {
   const sid = jar.get(COOKIE)?.value;
   if (!sid) return null;
 
-  const row = db().prepare(
+  const row = await one<{
+    sid: string; expires_at: string | Date; user_id: string; org_id: string;
+    email: string; name: string; initials: string; role: string;
+  }>(
     `SELECT s.id AS sid, s.expires_at, u.id AS user_id, u.org_id, u.email, u.name,
             u.initials, u.role
        FROM sessions s
        JOIN users u ON u.id = s.user_id
       WHERE s.id = ?`,
-  ).get(sid) as
-    | { sid: string; expires_at: string; user_id: string; org_id: string;
-        email: string; name: string; initials: string; role: string }
-    | undefined;
+    [sid],
+  );
 
   if (!row) return null;
   if (new Date(row.expires_at).getTime() < Date.now()) {
-    db().prepare(`DELETE FROM sessions WHERE id = ?`).run(row.sid);
+    await run(`DELETE FROM sessions WHERE id = ?`, [row.sid]);
     return null;
   }
   return {
@@ -111,12 +113,13 @@ export class UnauthorizedError extends Error {
   constructor() { super("Not authenticated"); this.name = "UnauthorizedError"; }
 }
 
-export function audit(
+export async function audit(
   orgId: string, userId: string | null, action: string,
   subjectType = "", subjectId = "", meta: Record<string, unknown> = {},
 ) {
-  db().prepare(
+  await run(
     `INSERT INTO audit_log (id, org_id, user_id, action, subject_type, subject_id, meta, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(id("aud"), orgId, userId, action, subjectType, subjectId, JSON.stringify(meta), now());
+    [id("aud"), orgId, userId, action, subjectType, subjectId, JSON.stringify(meta), now()],
+  );
 }

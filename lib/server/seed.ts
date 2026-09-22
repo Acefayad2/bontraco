@@ -1,5 +1,5 @@
 import "server-only";
-import { db, id, now, bool } from "./db";
+import { one, tx, id, now, bool } from "./db";
 import { hashPassword } from "./auth";
 import { contracts as demoContracts, obligations as demoObligations } from "@/lib/data";
 
@@ -89,92 +89,86 @@ const TEAM = [
   { name: "Sofia Alvarez", email: "sofia@bontraco.demo", role: "member" },
 ];
 
-export function isSeeded(): boolean {
-  const row = db().prepare(`SELECT COUNT(*) AS n FROM orgs`).get() as { n: number };
-  return row.n > 0;
+export async function isSeeded(): Promise<boolean> {
+  const row = await one<{ n: string | number }>(`SELECT COUNT(*) AS n FROM orgs`);
+  return Number(row?.n ?? 0) > 0;
 }
 
-export function seed(): { orgId: string; email: string } {
-  const database = db();
-  const existing = database.prepare(`SELECT id FROM orgs LIMIT 1`).get() as { id: string } | undefined;
+export async function seed(): Promise<{ orgId: string; email: string }> {
+  const existing = await one<{ id: string }>(`SELECT id FROM orgs LIMIT 1`);
   if (existing) return { orgId: existing.id, email: DEMO_EMAIL };
 
   const orgId = id("org");
   const passwordHash = hashPassword(DEMO_PASSWORD);
 
-  database.transaction(() => {
-    database.prepare(`INSERT INTO orgs (id, name, slug, created_at) VALUES (?,?,?,?)`)
-      .run(orgId, "Harborview Group", "harborview", now());
+  await tx(async (q) => {
+    await q.run(`INSERT INTO orgs (id, name, slug, created_at) VALUES (?,?,?,?)`,
+      [orgId, "Harborview Group", "harborview", now()]);
 
     const userIds = new Map<string, string>();
     for (const m of TEAM) {
       const uid = id("usr");
       const initials = m.name.split(" ").map((p) => p[0]).join("");
-      database.prepare(
+      await q.run(
         `INSERT INTO users (id, org_id, email, name, initials, password_hash, role, created_at)
          VALUES (?,?,?,?,?,?,?,?)`,
-      ).run(uid, orgId, m.email, m.name, initials, passwordHash, m.role, now());
+        [uid, orgId, m.email, m.name, initials, passwordHash, m.role, now()]);
       userIds.set(m.name, uid);
     }
 
     const pbId = id("pb");
-    database.prepare(
+    await q.run(
       `INSERT INTO playbooks (id, org_id, name, version, is_default, created_at) VALUES (?,?,?,?,?,?)`,
-    ).run(pbId, orgId, "Vendor Playbook", 4, 1, now());
-    const posStmt = database.prepare(
-      `INSERT INTO playbook_positions (id, playbook_id, org_id, category, title, standard,
-         fallback, walk_away, severity, sort_order) VALUES (?,?,?,?,?,?,?,?,?,?)`,
-    );
-    PLAYBOOK_POSITIONS.forEach((p, i) => {
-      posStmt.run(id("pos"), pbId, orgId, p.category, p.title, p.standard,
-        p.fallback, p.walkAway, p.severity, i);
-    });
+      [pbId, orgId, "Vendor Playbook", 4, true, now()]);
+    for (const [i, pos] of PLAYBOOK_POSITIONS.entries()) {
+      await q.run(
+        `INSERT INTO playbook_positions (id, playbook_id, org_id, category, title, standard,
+           fallback, walk_away, severity, sort_order) VALUES (?,?,?,?,?,?,?,?,?,?)`,
+        [id("pos"), pbId, orgId, pos.category, pos.title, pos.standard,
+         pos.fallback, pos.walkAway, pos.severity, i]);
+    }
 
-    const cStmt = database.prepare(
-      `INSERT INTO contracts (id, org_id, ref, title, counterparty, type, status, value,
-         currency, owner_user_id, department, effective_date, expiry_date, renewal_notice,
-         auto_renew, governing_law, risk, risk_score, ai_confidence, pages, summary, tags,
-         source, analyzed_by, created_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    );
-    const clStmt = database.prepare(
-      `INSERT INTO clauses (id, org_id, contract_id, title, category, risk, deviation,
-         excerpt, finding, suggestion, page, accepted, sort_order)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    );
     const contractIdByRef = new Map<string, string>();
 
     for (const c of demoContracts) {
       const cid = id("ct");
       contractIdByRef.set(c.ref, cid);
-      cStmt.run(cid, orgId, c.ref, c.title, c.counterparty, c.type, c.status, c.value, "USD",
-        userIds.get(c.owner) ?? null, c.department, c.effectiveDate, c.expiryDate,
-        c.renewalNotice, bool(c.autoRenew), c.governingLaw, c.risk, c.riskScore,
-        c.aiConfidence, c.pages, c.summary, JSON.stringify(c.tags), "seed", "seed", now());
-      c.clauses.forEach((cl, i) => {
-        clStmt.run(id("cl"), orgId, cid, cl.title, cl.category, cl.risk, cl.deviation,
-          cl.excerpt, cl.finding, cl.suggestion, cl.page, bool(Boolean(cl.accepted)), i);
-      });
+      await q.run(
+        `INSERT INTO contracts (id, org_id, ref, title, counterparty, type, status, value,
+           currency, owner_user_id, department, effective_date, expiry_date, renewal_notice,
+           auto_renew, governing_law, risk, risk_score, ai_confidence, pages, summary, tags,
+           source, analyzed_by, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [cid, orgId, c.ref, c.title, c.counterparty, c.type, c.status, c.value, "USD",
+         userIds.get(c.owner) ?? null, c.department, c.effectiveDate, c.expiryDate,
+         c.renewalNotice, bool(c.autoRenew), c.governingLaw, c.risk, c.riskScore,
+         c.aiConfidence, c.pages, c.summary, JSON.stringify(c.tags), "seed", "seed", now()]);
+      for (const [i, cl] of c.clauses.entries()) {
+        await q.run(
+          `INSERT INTO clauses (id, org_id, contract_id, title, category, risk, deviation,
+             excerpt, finding, suggestion, page, accepted, sort_order)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+          [id("cl"), orgId, cid, cl.title, cl.category, cl.risk, cl.deviation,
+           cl.excerpt, cl.finding, cl.suggestion, cl.page, bool(Boolean(cl.accepted)), i]);
+      }
     }
 
-    const oStmt = database.prepare(
-      `INSERT INTO obligations (id, org_id, contract_id, description, owner_user_id,
-         due_date, recurrence, status, category) VALUES (?,?,?,?,?,?,?,?,?)`,
-    );
     for (const o of demoObligations) {
-      const ref = o.contractId.toUpperCase();
-      const cid = contractIdByRef.get(ref);
+      const cid = contractIdByRef.get(o.contractId.toUpperCase());
       if (!cid) continue;
-      oStmt.run(id("obl"), orgId, cid, o.description, userIds.get(o.owner) ?? null,
-        o.dueDate, o.recurrence, o.status, o.category);
+      await q.run(
+        `INSERT INTO obligations (id, org_id, contract_id, description, owner_user_id,
+           due_date, recurrence, status, category) VALUES (?,?,?,?,?,?,?,?,?)`,
+        [id("obl"), orgId, cid, o.description, userIds.get(o.owner) ?? null,
+         o.dueDate, o.recurrence, o.status, o.category]);
     }
 
-    database.prepare(
+    await q.run(
       `INSERT INTO audit_log (id, org_id, user_id, action, subject_type, subject_id, meta, created_at)
        VALUES (?,?,?,?,?,?,?,?)`,
-    ).run(id("aud"), orgId, null, "org.seeded", "org", orgId,
-      JSON.stringify({ contracts: demoContracts.length }), now());
-  })();
+      [id("aud"), orgId, null, "org.seeded", "org", orgId,
+       JSON.stringify({ contracts: demoContracts.length }), now()]);
+  });
 
   return { orgId, email: DEMO_EMAIL };
 }

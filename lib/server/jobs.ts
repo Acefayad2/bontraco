@@ -1,5 +1,5 @@
 import "server-only";
-import { db, id, now } from "./db";
+import { one, run, tx, id, now } from "./db";
 import { getBlob } from "./storage";
 import { extractPdf, extractText } from "./extract";
 import { analyze } from "./analyze";
@@ -24,21 +24,23 @@ export interface JobView {
   error: string | null;
 }
 
-export function enqueueAnalysis(orgId: string, documentId: string, contractId: string, userId: string) {
+export async function enqueueAnalysis(
+  orgId: string, documentId: string, contractId: string, userId: string,
+) {
   const jobId = id("job");
-  db().prepare(
+  await run(
     `INSERT INTO jobs (id, org_id, kind, status, step, progress, document_id, contract_id, created_at)
      VALUES (?, ?, 'analyze_contract', 'queued', 'Queued', 0, ?, ?, ?)`,
-  ).run(jobId, orgId, documentId, contractId, now());
+    [jobId, orgId, documentId, contractId, now()],
+  );
 
   // Deliberately not awaited: the request returns the job id immediately.
-  setImmediate(() => { void run(jobId, orgId, userId); });
+  setImmediate(() => { void runJob(jobId, orgId, userId); });
   return jobId;
 }
 
-export function getJob(orgId: string, jobId: string): JobView | null {
-  const r = db().prepare(`SELECT * FROM jobs WHERE org_id = ? AND id = ?`)
-    .get(orgId, jobId) as Record<string, unknown> | undefined;
+export async function getJob(orgId: string, jobId: string): Promise<JobView | null> {
+  const r = await one(`SELECT * FROM jobs WHERE org_id = ? AND id = ?`, [orgId, jobId]);
   if (!r) return null;
   return {
     id: r.id as string,
@@ -50,23 +52,24 @@ export function getJob(orgId: string, jobId: string): JobView | null {
   };
 }
 
-function step(jobId: string, stepName: string, progress: number) {
-  db().prepare(`UPDATE jobs SET status='running', step=?, progress=? WHERE id=?`)
-    .run(stepName, progress, jobId);
+async function step(jobId: string, stepName: string, progress: number) {
+  await run(`UPDATE jobs SET status='running', step=?, progress=? WHERE id=?`,
+    [stepName, progress, jobId]);
 }
 
-async function run(jobId: string, orgId: string, userId: string) {
-  const database = db();
+async function runJob(jobId: string, orgId: string, userId: string) {
   try {
-    database.prepare(`UPDATE jobs SET status='running', started_at=?, step='Starting', progress=5 WHERE id=?`)
-      .run(now(), jobId);
+    await run(
+      `UPDATE jobs SET status='running', started_at=?, step='Starting', progress=5 WHERE id=?`,
+      [now(), jobId]);
 
-    const job = database.prepare(`SELECT * FROM jobs WHERE id = ?`).get(jobId) as Record<string, unknown>;
-    const doc = database.prepare(`SELECT * FROM documents WHERE id = ? AND org_id = ?`)
-      .get(job.document_id, orgId) as Record<string, unknown>;
+    const job = await one(`SELECT * FROM jobs WHERE id = ?`, [jobId]);
+    if (!job) throw new Error("Job not found");
+    const doc = await one(`SELECT * FROM documents WHERE id = ? AND org_id = ?`,
+      [job.document_id, orgId]);
     if (!doc) throw new Error("Document not found");
 
-    step(jobId, "Reading document", 15);
+    await step(jobId, "Reading document", 15);
     const bytes = await getBlob(doc.storage_key as string);
     const mime = doc.mime as string;
     const extracted = mime === "application/pdf"
@@ -79,31 +82,29 @@ async function run(jobId: string, orgId: string, userId: string) {
       );
     }
 
-    step(jobId, "Indexing pages", 30);
-    const insertPage = database.prepare(
-      `INSERT INTO document_pages (id, org_id, document_id, page, text) VALUES (?,?,?,?,?)`,
-    );
-    database.transaction(() => {
-      database.prepare(`DELETE FROM document_pages WHERE document_id = ? AND org_id = ?`)
-        .run(doc.id, orgId);
-      for (const p of extracted.pages) {
-        insertPage.run(id("pg"), orgId, doc.id, p.page, p.text);
+    await step(jobId, "Indexing pages", 30);
+    await tx(async (q) => {
+      await q.run(`DELETE FROM document_pages WHERE document_id = ? AND org_id = ?`,
+        [doc.id, orgId]);
+      for (const pg of extracted.pages) {
+        await q.run(
+          `INSERT INTO document_pages (id, org_id, document_id, page, text) VALUES (?,?,?,?,?)`,
+          [id("pg"), orgId, doc.id, pg.page, pg.text]);
       }
-    })();
-    database.prepare(`UPDATE documents SET page_count = ? WHERE id = ? AND org_id = ?`)
-      .run(extracted.pageCount, doc.id, orgId);
+    });
+    await run(`UPDATE documents SET page_count = ? WHERE id = ? AND org_id = ?`,
+      [extracted.pageCount, doc.id, orgId]);
 
-    step(jobId, "Scoring against playbook", 50);
-    const playbook = getDefaultPlaybook(orgId);
-    const org = database.prepare(`SELECT name FROM orgs WHERE id = ?`).get(orgId) as
-      { name: string } | undefined;
+    await step(jobId, "Scoring against playbook", 50);
+    const playbook = await getDefaultPlaybook(orgId);
+    const org = await one<{ name: string }>(`SELECT name FROM orgs WHERE id = ?`, [orgId]);
     const result = await analyze(
       extracted, playbook?.positions ?? [], doc.filename as string, org?.name ?? null,
     );
 
-    step(jobId, "Writing findings", 85);
+    await step(jobId, "Writing findings", 85);
     const contractId = job.contract_id as string;
-    replaceClauses(orgId, contractId, result.findings.map((f) => ({
+    await replaceClauses(orgId, contractId, result.findings.map((f) => ({
       title: f.title, category: f.category, risk: f.risk, deviation: f.deviation,
       excerpt: f.excerpt, finding: f.finding, suggestion: f.suggestion,
       page: f.page, accepted: false,
@@ -125,27 +126,28 @@ async function run(jobId: string, orgId: string, userId: string) {
     maybe("renewal_notice", result.renewalNotice);
     if (result.autoRenew !== null) { updates.push("auto_renew = ?"); params.push(result.autoRenew ? 1 : 0); }
     if (updates.length) {
-      database.prepare(`UPDATE contracts SET ${updates.join(", ")} WHERE org_id = ? AND id = ?`)
-        .run(...params, orgId, contractId);
+      await run(`UPDATE contracts SET ${updates.join(", ")} WHERE org_id = ? AND id = ?`,
+        [...params, orgId, contractId]);
     }
 
-    updateContractScore(orgId, contractId, {
+    await updateContractScore(orgId, contractId, {
       risk: result.risk, riskScore: result.riskScore, aiConfidence: result.confidence,
       pages: extracted.pageCount, summary: result.summary, analyzedBy: result.analyzedBy,
       status: "in_review",
     });
 
-    audit(orgId, userId, "contract.analyzed", "contract", contractId, {
+    await audit(orgId, userId, "contract.analyzed", "contract", contractId, {
       findings: result.findings.length, analyzedBy: result.analyzedBy,
       riskScore: result.riskScore, pages: extracted.pageCount,
     });
 
-    database.prepare(`UPDATE jobs SET status='done', step='Complete', progress=100, finished_at=? WHERE id=?`)
-      .run(now(), jobId);
+    await run(
+      `UPDATE jobs SET status='done', step='Complete', progress=100, finished_at=? WHERE id=?`,
+      [now(), jobId]);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[jobs] ${jobId} failed:`, err);
-    db().prepare(`UPDATE jobs SET status='failed', step='Failed', error=?, finished_at=? WHERE id=?`)
-      .run(message, now(), jobId);
+    await run(`UPDATE jobs SET status='failed', step='Failed', error=?, finished_at=? WHERE id=?`,
+      [message, now(), jobId]);
   }
 }

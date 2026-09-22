@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ContractsPage() {
   const session = await requireSession();
-  const contracts = listContracts(session.orgId);
+  const contracts = await listContracts(session.orgId);
   const portfolioValue = contracts.reduce((n, c) => n + c.value, 0);
 
   return (

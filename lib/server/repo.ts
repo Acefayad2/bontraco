@@ -1,5 +1,5 @@
 import "server-only";
-import { db, id, now, bool, unbool } from "./db";
+import { many, one, run, tx, id, now, bool, unbool } from "./db";
 import type { Contract, Clause, Obligation, RiskLevel, ContractStatus, ContractType } from "@/lib/types";
 
 /* Tenant-scoped data access.
@@ -57,36 +57,33 @@ const CONTRACT_SELECT = `
     LEFT JOIN users u ON u.id = c.owner_user_id
    WHERE c.org_id = ?`;
 
-export function listContracts(orgId: string): Contract[] {
-  const rows = db().prepare(`${CONTRACT_SELECT} ORDER BY c.risk_score DESC, c.created_at DESC`)
-    .all(orgId) as ContractRow[];
-  const clausesByContract = groupClauses(orgId, rows.map((r) => r.id));
+export async function listContracts(orgId: string): Promise<Contract[]> {
+  const rows = await many<ContractRow>(
+    `${CONTRACT_SELECT} ORDER BY c.risk_score DESC, c.created_at DESC`, [orgId]);
+  const clausesByContract = await groupClauses(orgId, rows.map((r) => r.id));
   return rows.map((r) => toContract(r, clausesByContract.get(r.id) ?? []));
 }
 
-export function getContract(orgId: string, contractId: string): Contract | null {
-  const row = db().prepare(`${CONTRACT_SELECT} AND c.id = ?`)
-    .get(orgId, contractId) as ContractRow | undefined;
+export async function getContract(orgId: string, contractId: string): Promise<Contract | null> {
+  const row = await one<ContractRow>(`${CONTRACT_SELECT} AND c.id = ?`, [orgId, contractId]);
   if (!row) return null;
-  return toContract(row, listClauses(orgId, contractId));
+  return toContract(row, await listClauses(orgId, contractId));
 }
 
-export function listClauses(orgId: string, contractId: string): Clause[] {
-  const rows = db().prepare(
+export async function listClauses(orgId: string, contractId: string): Promise<Clause[]> {
+  const rows = await many(
     `SELECT * FROM clauses WHERE org_id = ? AND contract_id = ?
-      ORDER BY deviation DESC, sort_order ASC`,
-  ).all(orgId, contractId) as Array<Record<string, unknown>>;
+      ORDER BY deviation DESC, sort_order ASC`, [orgId, contractId]);
   return rows.map(mapClause);
 }
 
-function groupClauses(orgId: string, contractIds: string[]): Map<string, Clause[]> {
+async function groupClauses(orgId: string, contractIds: string[]): Promise<Map<string, Clause[]>> {
   const out = new Map<string, Clause[]>();
   if (contractIds.length === 0) return out;
   const placeholders = contractIds.map(() => "?").join(",");
-  const rows = db().prepare(
+  const rows = await many(
     `SELECT * FROM clauses WHERE org_id = ? AND contract_id IN (${placeholders})
-      ORDER BY deviation DESC, sort_order ASC`,
-  ).all(orgId, ...contractIds) as Array<Record<string, unknown>>;
+      ORDER BY deviation DESC, sort_order ASC`, [orgId, ...contractIds]);
   for (const r of rows) {
     const cid = r.contract_id as string;
     if (!out.has(cid)) out.set(cid, []);
@@ -119,68 +116,66 @@ export interface NewContract {
   source: "seed" | "upload"; analyzedBy?: string | null;
 }
 
-export function insertContract(orgId: string, c: NewContract): string {
+export async function insertContract(orgId: string, c: NewContract): Promise<string> {
   const cid = id("ct");
-  db().prepare(
+  await run(
     `INSERT INTO contracts (id, org_id, ref, title, counterparty, type, status, value,
        currency, owner_user_id, department, effective_date, expiry_date, renewal_notice,
        auto_renew, governing_law, risk, risk_score, ai_confidence, pages, summary, tags,
        source, analyzed_by, created_at)
      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-  ).run(
-    cid, orgId, c.ref, c.title, c.counterparty, c.type, c.status, c.value, "USD",
-    c.ownerUserId, c.department, c.effectiveDate, c.expiryDate, c.renewalNotice,
-    bool(c.autoRenew), c.governingLaw, c.risk, c.riskScore, c.aiConfidence, c.pages,
-    c.summary, JSON.stringify(c.tags), c.source, c.analyzedBy ?? null, now(),
+    [cid, orgId, c.ref, c.title, c.counterparty, c.type, c.status, c.value, "USD",
+     c.ownerUserId, c.department, c.effectiveDate, c.expiryDate, c.renewalNotice,
+     bool(c.autoRenew), c.governingLaw, c.risk, c.riskScore, c.aiConfidence, c.pages,
+     c.summary, JSON.stringify(c.tags), c.source, c.analyzedBy ?? null, now()],
   );
   return cid;
 }
 
-export function replaceClauses(orgId: string, contractId: string, clauses: Omit<Clause, "id">[]) {
-  const database = db();
-  const tx = database.transaction(() => {
-    database.prepare(`DELETE FROM clauses WHERE org_id = ? AND contract_id = ?`)
-      .run(orgId, contractId);
-    const stmt = database.prepare(
-      `INSERT INTO clauses (id, org_id, contract_id, title, category, risk, deviation,
-         excerpt, finding, suggestion, page, accepted, sort_order)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    );
-    clauses.forEach((cl, i) => {
-      stmt.run(id("cl"), orgId, contractId, cl.title, cl.category, cl.risk, cl.deviation,
-        cl.excerpt, cl.finding, cl.suggestion, cl.page, bool(cl.accepted ?? false), i);
-    });
+export async function replaceClauses(
+  orgId: string, contractId: string, clauses: Omit<Clause, "id">[],
+) {
+  await tx(async (q) => {
+    await q.run(`DELETE FROM clauses WHERE org_id = ? AND contract_id = ?`, [orgId, contractId]);
+    for (const [i, cl] of clauses.entries()) {
+      await q.run(
+        `INSERT INTO clauses (id, org_id, contract_id, title, category, risk, deviation,
+           excerpt, finding, suggestion, page, accepted, sort_order)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [id("cl"), orgId, contractId, cl.title, cl.category, cl.risk, cl.deviation,
+         cl.excerpt, cl.finding, cl.suggestion, cl.page, bool(cl.accepted ?? false), i],
+      );
+    }
   });
-  tx();
 }
 
-export function setClauseAccepted(orgId: string, clauseId: string, accepted: boolean) {
-  return db().prepare(`UPDATE clauses SET accepted = ? WHERE org_id = ? AND id = ?`)
-    .run(bool(accepted), orgId, clauseId).changes;
+export async function setClauseAccepted(orgId: string, clauseId: string, accepted: boolean) {
+  return run(`UPDATE clauses SET accepted = ? WHERE org_id = ? AND id = ?`,
+    [bool(accepted), orgId, clauseId]);
 }
 
-export function updateContractScore(
+export async function updateContractScore(
   orgId: string, contractId: string,
   v: { risk: RiskLevel; riskScore: number; aiConfidence: number; pages: number;
        summary: string; analyzedBy: string; status?: string },
 ) {
-  db().prepare(
+  await run(
     `UPDATE contracts SET risk = ?, risk_score = ?, ai_confidence = ?, pages = ?,
             summary = ?, analyzed_by = ?, status = COALESCE(?, status)
       WHERE org_id = ? AND id = ?`,
-  ).run(v.risk, v.riskScore, v.aiConfidence, v.pages, v.summary, v.analyzedBy,
-        v.status ?? null, orgId, contractId);
+    [v.risk, v.riskScore, v.aiConfidence, v.pages, v.summary, v.analyzedBy,
+     v.status ?? null, orgId, contractId],
+  );
 }
 
-export function listObligations(orgId: string): Obligation[] {
-  const rows = db().prepare(
+export async function listObligations(orgId: string): Promise<Obligation[]> {
+  const rows = await many(
     `SELECT o.*, c.title AS contract_title, c.counterparty, u.name AS owner_name
        FROM obligations o
        JOIN contracts c ON c.id = o.contract_id AND c.org_id = o.org_id
        LEFT JOIN users u ON u.id = o.owner_user_id
       WHERE o.org_id = ?
-      ORDER BY o.due_date ASC`,
-  ).all(orgId) as Array<Record<string, unknown>>;
+      ORDER BY o.due_date ASC`, [orgId]);
   return rows.map((r) => ({
     id: r.id as string,
     contractId: r.contract_id as string,
@@ -200,24 +195,22 @@ export interface PlaybookPosition {
   standard: string; fallback: string | null; walkAway: string | null; severity: string;
 }
 
-export function getDefaultPlaybook(orgId: string) {
-  const pb = db().prepare(
-    `SELECT * FROM playbooks WHERE org_id = ? AND is_default = 1 LIMIT 1`,
-  ).get(orgId) as { id: string; name: string; version: number } | undefined;
+export async function getDefaultPlaybook(orgId: string) {
+  const pb = await one<{ id: string; name: string; version: number }>(
+    `SELECT * FROM playbooks WHERE org_id = ? AND is_default = true LIMIT 1`, [orgId]);
   if (!pb) return null;
-  const positions = db().prepare(
-    `SELECT id, category, title, standard, fallback, walk_away AS walkAway, severity
+  const positions = await many<PlaybookPosition>(
+    `SELECT id, category, title, standard, fallback, walk_away AS "walkAway", severity
        FROM playbook_positions WHERE playbook_id = ? AND org_id = ? ORDER BY sort_order`,
-  ).all(pb.id, orgId) as PlaybookPosition[];
+    [pb.id, orgId]);
   return { ...pb, positions };
 }
 
-export function listAudit(orgId: string, limit = 50) {
-  return db().prepare(
+export async function listAudit(orgId: string, limit = 50) {
+  return many(
     `SELECT a.*, u.name AS user_name FROM audit_log a
        LEFT JOIN users u ON u.id = a.user_id
-      WHERE a.org_id = ? ORDER BY a.created_at DESC LIMIT ?`,
-  ).all(orgId, limit) as Array<Record<string, unknown>>;
+      WHERE a.org_id = ? ORDER BY a.created_at DESC LIMIT ?`, [orgId, limit]);
 }
 
 export interface OrgStats {
@@ -225,8 +218,8 @@ export interface OrgStats {
   active: number; in_flight: number; open_findings: number;
 }
 
-export function orgStats(orgId: string): OrgStats {
-  const row = db().prepare(
+export async function orgStats(orgId: string): Promise<OrgStats> {
+  const row = await one<Record<string, string | number>>(
     `SELECT COUNT(*) AS total,
             COALESCE(SUM(value), 0) AS portfolio_value,
             SUM(CASE WHEN risk = 'high' THEN 1 ELSE 0 END) AS high,
@@ -234,11 +227,16 @@ export function orgStats(orgId: string): OrgStats {
             SUM(CASE WHEN risk = 'low' THEN 1 ELSE 0 END) AS low,
             SUM(CASE WHEN status IN ('executed','expiring') THEN 1 ELSE 0 END) AS active,
             SUM(CASE WHEN status IN ('in_review','draft','awaiting_signature') THEN 1 ELSE 0 END) AS in_flight
-       FROM contracts WHERE org_id = ?`,
-  ).get(orgId) as Record<string, number>;
-  const findings = db().prepare(
+       FROM contracts WHERE org_id = ?`, [orgId]);
+  const findings = await one<{ n: string | number }>(
     `SELECT COUNT(*) AS n FROM clauses
-      WHERE org_id = ? AND risk != 'low' AND accepted = 0`,
-  ).get(orgId) as { n: number };
-  return { ...(row as unknown as Omit<OrgStats, "open_findings">), open_findings: findings.n };
+      WHERE org_id = ? AND risk != 'low' AND accepted = false`, [orgId]);
+  // Postgres returns COUNT and SUM as strings; the UI does arithmetic on these.
+  const num = (v: unknown) => Number(v ?? 0);
+  return {
+    total: num(row?.total), portfolio_value: num(row?.portfolio_value),
+    high: num(row?.high), medium: num(row?.medium), low: num(row?.low),
+    active: num(row?.active), in_flight: num(row?.in_flight),
+    open_findings: num(findings?.n),
+  };
 }

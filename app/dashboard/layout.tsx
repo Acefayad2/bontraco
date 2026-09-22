@@ -9,13 +9,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const stats = orgStats(session.orgId);
-  const playbook = getDefaultPlaybook(session.orgId);
-  const overdue = listObligations(session.orgId).filter((o) => o.status === "overdue").length;
+  const [stats, playbook, obligations, contracts] = await Promise.all([
+    orgStats(session.orgId),
+    getDefaultPlaybook(session.orgId),
+    listObligations(session.orgId),
+    listContracts(session.orgId),
+  ]);
+  const overdue = obligations.filter((o) => o.status === "overdue").length;
 
   return (
     <Shell
-      contracts={listContracts(session.orgId)}
+      contracts={contracts}
       user={{
         name: session.name,
         initials: session.initials,

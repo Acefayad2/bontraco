@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession, audit } from "@/lib/server/auth";
 import { putBlob } from "@/lib/server/storage";
-import { db, id, now } from "@/lib/server/db";
+import { one, run, id, now } from "@/lib/server/db";
 import { insertContract } from "@/lib/server/repo";
 import { enqueueAnalysis } from "@/lib/server/jobs";
 
@@ -47,18 +47,19 @@ export async function POST(request: Request) {
   const blob = await putBlob(session.orgId, bytes);
 
   const docId = id("doc");
-  db().prepare(
+  await run(
     `INSERT INTO documents (id, org_id, filename, mime, bytes, sha256, storage_key, created_at)
      VALUES (?,?,?,?,?,?,?,?)`,
-  ).run(docId, session.orgId, name, mime, blob.bytes, blob.sha256, blob.key, now());
+    [docId, session.orgId, name, mime, blob.bytes, blob.sha256, blob.key, now()],
+  );
 
   // A placeholder contract exists from the moment of upload so the document is
   // never orphaned; the analyzer fills in the real title, parties and dates.
-  const seq = (db().prepare(
-    `SELECT COUNT(*) AS n FROM contracts WHERE org_id = ?`,
-  ).get(session.orgId) as { n: number }).n + 1;
+  const count = await one<{ n: string | number }>(
+    `SELECT COUNT(*) AS n FROM contracts WHERE org_id = ?`, [session.orgId]);
+  const seq = Number(count?.n ?? 0) + 1;
 
-  const contractId = insertContract(session.orgId, {
+  const contractId = await insertContract(session.orgId, {
     ref: `BC-2026-${String(500 + seq).padStart(4, "0")}`,
     title: stripExtension(name),
     counterparty: "Pending analysis",
@@ -69,14 +70,14 @@ export async function POST(request: Request) {
     summary: "Analysis in progress.", tags: ["Uploaded"], source: "upload",
   });
 
-  db().prepare(`UPDATE documents SET contract_id = ? WHERE id = ? AND org_id = ?`)
-    .run(contractId, docId, session.orgId);
+  await run(`UPDATE documents SET contract_id = ? WHERE id = ? AND org_id = ?`,
+    [contractId, docId, session.orgId]);
 
-  audit(session.orgId, session.userId, "contract.uploaded", "contract", contractId, {
+  await audit(session.orgId, session.userId, "contract.uploaded", "contract", contractId, {
     filename: name, bytes: blob.bytes, sha256: blob.sha256,
   });
 
-  const jobId = enqueueAnalysis(session.orgId, docId, contractId, session.userId);
+  const jobId = await enqueueAnalysis(session.orgId, docId, contractId, session.userId);
   return NextResponse.json({ jobId, contractId }, { status: 202 });
 }
 
